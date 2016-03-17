@@ -24,7 +24,7 @@
 
 <p><img src="https://raw.githubusercontent.com/RoRoche/AndroidStarter/master/assets/logo_android.png" alt="Android logo"></p>
 
-<p>By writing this paper, my goal is to describe how I came up with the iOS app architecture I suggest.
+<p>By writing this paper, my goal is to describe how I came up with the Android app architecture I suggest.
 It's a step by step writing to follow the reasons bringing me to set up the different components I chose.</p>
 
 <p>The aim of the template application is very simple: it's a master/detail application to present a list of GitHub repositories of a given user.
@@ -47,13 +47,13 @@ Although it's simple, it gathers some classical jobs when writing an application
 <h3>
 <a id="rest-client" class="anchor" href="#rest-client" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>REST Client</h3>
 
-<p><a href="http://square.github.io/retrofit/">Retrofit</a> is a well-known library that comes back frequently when developers list a "must-have libraries" for Android development.</p>
+<p><a href="http://square.github.io/retrofit/">Retrofit</a> is a well-known library that comes back frequently when developers list "must-have libraries" for Android development.</p>
 
 <p>I'm going to explain why I consider it's a must-have library:</p>
 
 <ul>
 <li>it's type-safe</li>
-<li>the interface to write is human-readable, and annotation with path inside provide a useful mirror of the API</li>
+<li>the interface to write is human-readable, and annotations with path inside provide a useful mirror of the API</li>
 <li>it provides a complete abstraction layer of how it works under the hood</li>
 <li>it supports multipart request body (useful when you want to upload a file)</li>
 <li>header management directly inside the interface using annotations</li>
@@ -62,22 +62,21 @@ Although it's simple, it gathers some classical jobs when writing an application
 <li>it is easy to mock when testing</li>
 </ul>
 
-<p>It simple to add to a project via the following instruction in the <code>build.gradle</code> file:</p>
+<p>It's simple to add to a project through the following instruction in the <code>build.gradle</code> file:</p>
 
-<div class="highlight highlight-source-groovy"><pre>    compile <span class="pl-s"><span class="pl-pds">'</span>com.squareup.retrofit:retrofit:2.0.0-beta2<span class="pl-pds">'</span></span></pre></div>
+<div class="highlight highlight-source-groovy"><pre>    compile <span class="pl-s"><span class="pl-pds">'</span>com.squareup.retrofit:retrofit:{{last_version}}<span class="pl-pds">'</span></span></pre></div>
 
-<p>Then I can declare an interface called <code>GitHubService</code> that mirrors the API and declares the method we need to use this one:</p>
+<p>Then I can declare an interface called <code>GitHubService</code> that mirrors the API and declares the methods we need to consume this one:</p>
 
 <div class="highlight highlight-source-java"><pre><span class="pl-k">public</span> <span class="pl-k">interface</span> <span class="pl-en">GitHubService</span> {
     <span class="pl-k">@GET</span>(<span class="pl-s"><span class="pl-pds">"</span>/users/{user}/repos<span class="pl-pds">"</span></span>)
     <span class="pl-k">Call&lt;<span class="pl-k">List&lt;<span class="pl-smi">DTORepo</span>&gt;</span>&gt;</span> <span class="pl-en">listRepos</span>(<span class="pl-k">@Path</span>(<span class="pl-s"><span class="pl-pds">"</span>user<span class="pl-pds">"</span></span>) <span class="pl-k">final</span> <span class="pl-smi">String</span> <span class="pl-v">psUser</span>);
 }</pre></div>
 
-<p>Next I obtain an implementation of this interface via the <code>RestAdapter</code> class, as follows:</p>
+<p>Next I obtain an implementation of this interface thanks the <code>RestAdapter</code> class, as follows:</p>
 
 <div class="highlight highlight-source-java"><pre><span class="pl-k">final</span> <span class="pl-smi">Retrofit</span> loRetrofit <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-smi">Retrofit</span>.<span class="pl-smi">Builder</span>()
     .baseUrl(<span class="pl-s"><span class="pl-pds">"</span>https://api.github.com<span class="pl-pds">"</span></span>)
-    .addConverterFactory(<span class="pl-smi">JacksonConverterFactory</span><span class="pl-k">.</span>create())
     .build();
 
 <span class="pl-k">final</span> <span class="pl-smi">GitHubService</span> loService <span class="pl-k">=</span> loRetrofit<span class="pl-k">.</span>create(<span class="pl-smi">GitHubService</span><span class="pl-k">.</span>class);
@@ -98,24 +97,24 @@ Although it's simple, it gathers some classical jobs when writing an application
 <h3>
 <a id="parsing-data" class="anchor" href="#parsing-data" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Parsing data</h3>
 
-<p>So, now we have our data coming from our remote server. It's time to describe how to process in order to get our POJOs. A common format to data-interchange format used is JSON. No surprise at this point. And if your familiar to the Java world, no more surprise when I tell you I'm going to set up a JSON parser using <a href="https://github.com/FasterXML/jackson">Jackson</a>! Obviously, no need to explain that Jackson is still one the most popular libraries in this subject.</p>
+<p>So, now we have our data coming from our remote server. It's time to describe how to process it in order to get our POJOs. A common format to interchange data is JSON. No surprise at this point. And if you are familiar with the Java world, no more surprise when I tell you I'm going to set up a JSON parser using <a href="https://github.com/FasterXML/jackson">Jackson</a>! Obviously, no need to explain that Jackson is still one of the most popular libraries in this subject.</p>
 
 <p>Nevertheless, I would like to add some criteria that make me love Jackson:
-First, I'm very satisfied with its fluent annotation API. And it's pretty helpful to be able to get and store properties that are not declare through the <code>@JsonProperty</code> annotation. Actually, here is some code to illustrate my words:</p>
+First, I'm very satisfied with its fluent annotation API. And it's pretty helpful to be able to get and store properties that are not declared through the <code>@JsonProperty</code> annotation. Actually, here is some code to illustrate my words:</p>
 
 <div class="highlight highlight-source-java"><pre><span class="pl-k">public</span> <span class="pl-k">class</span> <span class="pl-en">Example</span> {
 
     <span class="pl-k">@JsonIgnore</span>
-    <span class="pl-k">private</span> <span class="pl-k">Map&lt;<span class="pl-smi">String</span>, <span class="pl-smi">Object</span>&gt;</span> additionalProperties <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-k">HashMap&lt;<span class="pl-smi">String</span>, <span class="pl-smi">Object</span>&gt;</span>();
+    <span class="pl-k">private</span> <span class="pl-k">Map&lt;<span class="pl-smi">String</span>, <span class="pl-smi">Object</span>&gt;</span> mAdditionalProperties <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-k">HashMap&lt;<span class="pl-smi">String</span>, <span class="pl-smi">Object</span>&gt;</span>();
 
     <span class="pl-k">@JsonAnyGetter</span>
     <span class="pl-k">public</span> <span class="pl-k">Map&lt;<span class="pl-smi">String</span>, <span class="pl-smi">Object</span>&gt;</span> <span class="pl-en">getAdditionalProperties</span>() {
-        <span class="pl-k">return</span> <span class="pl-v">this</span><span class="pl-k">.</span>additionalProperties;
+        <span class="pl-k">return</span> mAdditionalProperties;
     }
 
     <span class="pl-k">@JsonAnySetter</span>
-    <span class="pl-k">public</span> <span class="pl-k">void</span> <span class="pl-en">setAdditionalProperty</span>(<span class="pl-smi">String</span> <span class="pl-v">name</span>, <span class="pl-smi">Object</span> <span class="pl-v">value</span>) {
-        <span class="pl-v">this</span><span class="pl-k">.</span>additionalProperties<span class="pl-k">.</span>put(name, value);
+    <span class="pl-k">public</span> <span class="pl-k">void</span> <span class="pl-en">setAdditionalProperty</span>(<span class="pl-k">final</span> <span class="pl-smi">String</span> <span class="pl-v">psName</span>, <span class="pl-k">final</span> <span class="pl-smi">Object</span> <span class="pl-v">poValue</span>) {
+        mAdditionalProperties<span class="pl-k">.</span>put(psName, value poValue;
     }
 }</pre></div>
 
@@ -123,9 +122,9 @@ First, I'm very satisfied with its fluent annotation API. And it's pretty helpfu
 
 <p>Just think of a unusual behavior: I get a <code>NullPointerException</code> (for example) while processing my data. </p>
 
-<p>But why? Simply because the JSON key changed server-side.</p>
+<p>But why? Simply because the JSON key has changed server-side.</p>
 
-<p>But how could I see It if the API team did not let me know... A dive to the debugger and we can see that the <code>additionalProperties</code> contains our expected value, but with a different key. And here we are! No wasting time any longer to debug this point.</p>
+<p>But how could I see it if the API team did not let me know... A dive to the debugger and we can see that the <code>mAdditionalProperties</code> contains our expected value, but with a different key. And here we are! No wasting time any longer to debug this point.</p>
 
 <h4>
 <a id="combination-with-retrofit" class="anchor" href="#combination-with-retrofit" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Combination with Retrofit</h4>
@@ -183,11 +182,11 @@ It relies on compile-time annotation processing to generate parsing/serializing 
 <p>A frequently asked question in Android ecosystem is:</p>
 
 <ul>
-<li>how can to make components communicate together, and optionally passing parameters?</li>
+<li>how to make components communicate together, and optionally passing parameters?</li>
 </ul>
 
 <p>A common response is to set up an event bus.
-<a href="http://android-arsenal.com/tag/32">A lot a libraries provide solution to this problem</a>, among which:</p>
+<a href="http://android-arsenal.com/tag/32">A lot of libraries provide solution to this problem</a>, among which:</p>
 
 <ul>
 <li><a href="http://square.github.io/otto/">Otto</a></li>
@@ -216,25 +215,25 @@ It relies on compile-time annotation processing to generate parsing/serializing 
 <p>But, the real point under the hood is the event inheritance. Indeed, if I define an <code>AbstractEventQueryDidFinish</code> (and I do so!), and then, for each query, a dedicated termination event such as <code>EventQueryADidFinish</code> and <code>EventQueryBDidFinish</code> for example, I'm able to:</p>
 
 <ul>
-<li>define a method to be notified of a <code>EventQueryADidFinish</code> publication</li>
-<li>define a method to be notified of a <code>EventQueryBDidFinish</code> publication</li>
-<li>and, the more interesting for me, define a method to be notified of a <code>AbstractEventQueryDidFinish</code> publication </li>
+<li>define a method to be notified of a <code>EventQueryADidFinish</code> publication ;</li>
+<li>define a method to be notified of a <code>EventQueryBDidFinish</code> publication ;</li>
+<li>and, the most interesting for me, define a method to be notified of a <code>AbstractEventQueryDidFinish</code> publication.</li>
 </ul>
 
-<p>Actually, it can be pretty useful to have a global interceptor that is notified when a query finished, no matters its strong type.</p>
+<p>Actually, it can be pretty useful to have a global interceptor that is notified when a query finished, with no matters of its strong type.</p>
 
-<p>For example, if you maintain a list a pending queries in an object (a synchronization engine for example), you can register this one to be notified of every <code>AbstractEventQueryDidFinish</code>.
-So it becomes possible to refresh your pending queries list every time a query finished, and optionally store its results (failure or success).</p>
+<p>For example, if you maintain a list of pending queries in an object (a synchronization engine for example), you can register this one to be notified of every <code>AbstractEventQueryDidFinish</code>.
+So it becomes possible to refresh your pending queries list every time a request ends, and optionally store its result (failure or success).</p>
 
 <h3>
 <a id="thread-management" class="anchor" href="#thread-management" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Thread management</h3>
 
-<p>Otto provides an API to define on which thread we can receive callbacks.
+<p>Otto provides an API to define on which thread we publish an event.
 Nevertheless, I defined my own bus subclass to ensure that the subscribers are notified on the main thread:</p>
 
 <div class="highlight highlight-source-java"><pre><span class="pl-k">public</span> <span class="pl-k">class</span> <span class="pl-en">BusMainThread</span> <span class="pl-k">extends</span> <span class="pl-e">Bus</span> {
     <span class="pl-c">//region Field</span>
-    <span class="pl-k">private</span> <span class="pl-k">final</span> <span class="pl-smi">Handler</span> handler <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-smi">Handler</span>(<span class="pl-smi">Looper</span><span class="pl-k">.</span>getMainLooper());
+    <span class="pl-k">private</span> <span class="pl-k">final</span> <span class="pl-smi">Handler</span> mHandler <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-smi">Handler</span>(<span class="pl-smi">Looper</span><span class="pl-k">.</span>getMainLooper());
     <span class="pl-c">//endregion</span>
 
     <span class="pl-c">//region Constructor</span>
@@ -249,13 +248,13 @@ Nevertheless, I defined my own bus subclass to ensure that the subscribers are n
         <span class="pl-k">if</span> (<span class="pl-smi">Looper</span><span class="pl-k">.</span>myLooper() <span class="pl-k">==</span> <span class="pl-smi">Looper</span><span class="pl-k">.</span>getMainLooper()) {
             <span class="pl-v">super</span><span class="pl-k">.</span>post(event);
         } <span class="pl-k">else</span> {
-            handler<span class="pl-k">.</span>post(() <span class="pl-k">-</span><span class="pl-k">&gt;</span> <span class="pl-smi">BusMainThread</span><span class="pl-k">.</span><span class="pl-v">super</span><span class="pl-k">.</span>post(event));
+            mHandler<span class="pl-k">.</span>post(() <span class="pl-k">-</span><span class="pl-k">&gt;</span> <span class="pl-smi">BusMainThread</span><span class="pl-k">.</span><span class="pl-v">super</span><span class="pl-k">.</span>post(event));
         }
     }
     <span class="pl-c">//endregion</span>
 }</pre></div>
 
-<p>Finally, to have a little more control on which events are published on the thread, I defined an abstract class:</p>
+<p>Finally, to have a little more control on the type of events that are published, I defined an abstract class:</p>
 
 <div class="highlight highlight-source-java"><pre><span class="pl-k">public</span> <span class="pl-k">abstract</span> <span class="pl-k">class</span> <span class="pl-en">AbstractEvent</span> { }</pre></div>
 
@@ -312,18 +311,18 @@ Nevertheless, I defined my own bus subclass to ensure that the subscribers are n
 <h2>
 <a id="managing-jobs" class="anchor" href="#managing-jobs" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Managing jobs</h2>
 
-<p>Multithreading and concurrency are recurrent developers consideration. It comes in combination with one of the most important rule when developing an Android application: don't block the UI thread! It's kind of "words of wisdom" but it's important to keep it in mind permanently.</p>
+<p>Multithreading and concurrency are recurrent developers' considerations. It comes in combination with one of the most important rule when developing an Android application: don't block the UI thread! It's kind of "words of wisdom" but it's important to keep it in mind permanently.</p>
 
 <p>So, we can easily list some jobs that must not be done on the main thread:</p>
 
 <ul>
-<li>call to the remote API</li>
-<li>database CRUD operation</li>
+<li>calls to the remote API</li>
+<li>database CRUD operations</li>
 <li>read a local file</li>
 <li>etc.</li>
 </ul>
 
-<p>Fortunately, many resources comes to rescue: classes from the official Android SDK, blog posts, libraries and so on.</p>
+<p>Fortunately, many resources comes to the rescue: classes from the official Android SDK, blog posts, libraries and so on.</p>
 
 <p>But one of the most useful resource I met is the "Android REST client applications" session from Google I/O 2010 by Virgil Dobjanschi:</p>
 
@@ -332,7 +331,7 @@ Nevertheless, I defined my own bus subclass to ensure that the subscribers are n
 <li><a href="https://dl.google.com/googleio/2010/android-developing-RESTful-android-apps.pdf">https://dl.google.com/googleio/2010/android-developing-RESTful-android-apps.pdf</a></li>
 </ul>
 
-<p>And I totally joined to one of its advices that are:</p>
+<p>And I totally joined to his advices that are:</p>
 
 <ul>
 <li>use <a href="http://developer.android.com/reference/android/app/Service.html"><code>Service</code></a> class from the Android SDK</li>
@@ -361,14 +360,14 @@ Nevertheless, I defined my own bus subclass to ensure that the subscribers are n
 <h3>
 <a id="android-priority-job-queue-job-manager" class="anchor" href="#android-priority-job-queue-job-manager" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Android Priority Job Queue (Job Manager)</h3>
 
-<p>It's probably one of the most documented, unit testing, powerful and reliable library I met. And it's based on the Google I/O brought up previously.</p>
+<p>It's probably one of the most documented, unit tested, powerful and reliable library I met. And it's based on the Google I/O brought up previously.</p>
 
 <p>To set it up, we need to follow two steps.</p>
 
 <h4>
 <a id="job-manager-configuration" class="anchor" href="#job-manager-configuration" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Job Manager Configuration</h4>
 
-<p>The <code>JobManager</code> is a key concept from this library. It's responsible of enqueuing and performing jobs. It's designed to be as flexible as possible to allow developer to make his own configuration.</p>
+<p>The <code>JobManager</code> is a key concept from this library. It's responsible of enqueuing and performing jobs. It's designed to be as flexible as possible to allow developer to build his own configuration.</p>
 
 <p>It become possible to tell:</p>
 
@@ -379,15 +378,15 @@ Nevertheless, I defined my own bus subclass to ensure that the subscribers are n
 <li>which logger to use</li>
 </ul>
 
-<p>You can find more information at the following address: <a href="https://github.com/yigit/android-priority-jobqueue/wiki/Job-Manager-Configuration">https://github.com/yigit/android-priority-jobqueue/wiki/Job-Manager-Configuration</a></p>
+<p>You can find more information at the following URL: <a href="https://github.com/yigit/android-priority-jobqueue/wiki/Job-Manager-Configuration">https://github.com/yigit/android-priority-jobqueue/wiki/Job-Manager-Configuration</a></p>
 
 <p>As a sample, here is the configuration I use to perform network requests:</p>
 
 <div class="highlight highlight-source-java"><pre><span class="pl-k">final</span> <span class="pl-smi">Configuration</span> loConfiguration <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-smi">Configuration</span>.<span class="pl-smi">Builder</span>(poContext)
-    .minConsumerCount(<span class="pl-c1">1</span>) <span class="pl-c">//always keep at least one consumer alive</span>
-    .maxConsumerCount(<span class="pl-c1">3</span>) <span class="pl-c">//up to 3 consumers at a time</span>
-    .loadFactor(<span class="pl-c1">3</span>) <span class="pl-c">//3 jobs per consumer</span>
-    .consumerKeepAlive(<span class="pl-c1">120</span>) <span class="pl-c">//wait 2 minute</span>
+    .minConsumerCount(<span class="pl-c1">1</span>) <span class="pl-c">// always keep at least one consumer alive</span>
+    .maxConsumerCount(<span class="pl-c1">3</span>) <span class="pl-c">// up to 3 consumers at a time</span>
+    .loadFactor(<span class="pl-c1">3</span>) <span class="pl-c">// 3 jobs per consumer</span>
+    .consumerKeepAlive(<span class="pl-c1">120</span>) <span class="pl-c">// wait 2 minute</span>
     .build();
 
 <span class="pl-k">final</span> <span class="pl-smi">JobManager</span> loJobManager <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-smi">JobManager</span>(poContext, loConfiguration);</pre></div>
@@ -395,7 +394,7 @@ Nevertheless, I defined my own bus subclass to ensure that the subscribers are n
 <h4>
 <a id="job-configuration" class="anchor" href="#job-configuration" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Job Configuration</h4>
 
-<p>A way I love with this library is to consider each network request as a specific <code>Job</code>. This is that abstract class we must extend if we want to configure a job. Thanks its constructor, it's highly-configurable. We can set some useful parameters to a job, as follow:</p>
+<p>A way I love with this library, is to consider each network request as a specific <code>Job</code>. This is that abstract class we must extend if we want to configure a job. Thanks to its constructor, it's highly-configurable. We can set some useful parameters to a job, as follow:</p>
 
 <ul>
 <li>its priority</li>
@@ -405,13 +404,13 @@ Nevertheless, I defined my own bus subclass to ensure that the subscribers are n
 <li>its retry policy</li>
 </ul>
 
-<p>It's also possible de group jobs so that they can be sequential. It's pretty useful if you want to design a messaging client for example.</p>
+<p>It's also possible to group jobs so that they can be executed sequentially. It's pretty useful if you want to design a messaging client for example.</p>
 
 <p>All necessary information about job configuration can be found on this page: <a href="https://github.com/yigit/android-priority-jobqueue/wiki/Job-Configuration">https://github.com/yigit/android-priority-jobqueue/wiki/Job-Configuration</a></p>
 
-<p>The persistence engine of this library is very powerful. For example, if network is unreachable, jobs are serialized and persist on the device. Once the network become reachable, the <code>JobManager</code> dequeues the persisted jobs and perform them as usual.</p>
+<p>The persistence engine of this library is very powerful. For example, if network is unreachable, jobs are serialized and persisted on the device. Once the network becomes reachable, the <code>JobManager</code> dequeues the persisted jobs and performs them as usual.</p>
 
-<p>I identified some redundant code when writing jobs to perform network requests. That's why I wrote an abstract class every query should extend:</p>
+<p>I identified some redundant code when writing jobs to perform network requests. That's why I wrote an abstract class that every query should extend:</p>
 
 <div class="highlight highlight-source-java"><pre><span class="pl-k">public</span> <span class="pl-k">abstract</span> <span class="pl-k">class</span> <span class="pl-en">AbstractQuery</span> <span class="pl-k">extends</span> <span class="pl-e">Job</span> {
     <span class="pl-k">private</span> <span class="pl-k">static</span> <span class="pl-k">final</span> <span class="pl-smi">String</span> <span class="pl-c1">TAG</span> <span class="pl-k">=</span> <span class="pl-smi">AbstractQuery</span><span class="pl-k">.</span>class<span class="pl-k">.</span>getSimpleName();
@@ -487,7 +486,7 @@ Nevertheless, I defined my own bus subclass to ensure that the subscribers are n
 
 <ul>
 <li>an <code>enum</code> describing available priorities I need</li>
-<li>two constructor to provide both a simple and a complex way to build the query</li>
+<li>two constructors to provide both a simple and a complex way to build the query</li>
 <li>the way to perform the specific code and how the exceptions are handled</li>
 <li>a default retry limit</li>
 </ul>
@@ -536,7 +535,7 @@ Considering I'm using Otto to communicate between components, here comes the abs
 
 <p>Each query I defined could publish a specific event, subclassing <code>AbstractEventQueryDidFinish</code>, to notify about its termination with status.</p>
 
-<p>Putting it all together, here is a code snippet of the query I define to get GitHub repositories of a given user:</p>
+<p>Putting it all together, here is a code snippet of the query I defined to get GitHub repositories of a given user:</p>
 
 <div class="highlight highlight-source-java"><pre><span class="pl-k">public</span> <span class="pl-k">class</span> <span class="pl-en">QueryGetRepos</span> <span class="pl-k">extends</span> <span class="pl-e">AbstractQuery</span> {
     <span class="pl-k">private</span> <span class="pl-k">static</span> <span class="pl-k">final</span> <span class="pl-smi">String</span> <span class="pl-c1">TAG</span> <span class="pl-k">=</span> <span class="pl-smi">QueryGetRepos</span><span class="pl-k">.</span>class<span class="pl-k">.</span>getSimpleName();
@@ -547,7 +546,7 @@ Considering I'm using Otto to communicate between components, here comes the abs
     <span class="pl-c">//endregion</span>
 
     <span class="pl-c">//region Constructor matching super</span>
-    <span class="pl-k">protected</span> <span class="pl-en">QueryGetRepos</span>() {
+    <span class="pl-k">protected</span> <span class="pl-en">QueryGetRepos</span>(<span class="pl-k">@NonNull</span> <span class="pl-k">final</span> <span class="pl-smi">String</span> <span class="pl-v">psUser</span>) {
         <span class="pl-v">super</span>(<span class="pl-smi">Priority</span><span class="pl-c1"><span class="pl-k">.</span>MEDIUM</span>);
         user <span class="pl-k">=</span> psUser;
     }
@@ -555,7 +554,6 @@ Considering I'm using Otto to communicate between components, here comes the abs
 
     <span class="pl-c">//region Overridden method</span>
     <span class="pl-k">@Override</span>
-    <span class="pl-k">@SneakyThrows</span>(<span class="pl-smi">SQLException</span><span class="pl-k">.</span>class)
     <span class="pl-k">protected</span> <span class="pl-k">void</span> <span class="pl-en">execute</span>() <span class="pl-k">throws</span> <span class="pl-smi">Exception</span> {
         <span class="pl-k">final</span> <span class="pl-smi">GitHubService</span> gitHubService <span class="pl-k">=</span> <span class="pl-c">// specific code to get GitHubService instance</span>
 
@@ -588,7 +586,7 @@ Considering I'm using Otto to communicate between components, here comes the abs
     <span class="pl-c">//endregion</span>
 }</pre></div>
 
-<p>And now, with a simple proxy class I call <code>QueryFactory</code> (it's very closed to the <code>ServiceHelper</code> mentioned by Virgil Dobjanschi), I can start easily every query with a strong protocol ti conform to:</p>
+<p>And now, with a simple proxy class I call <code>QueryFactory</code> (it's very closed to the <code>ServiceHelper</code> mentioned by Virgil Dobjanschi), I can start easily every request with a strong protocol to conform to:</p>
 
 <div class="highlight highlight-source-java"><pre><span class="pl-k">public</span> <span class="pl-k">class</span> <span class="pl-en">QueryFactory</span> {
     <span class="pl-c">//region Build methods</span>
@@ -623,7 +621,6 @@ Considering I'm using Otto to communicate between components, here comes the abs
     <span class="pl-smi">JobManager</span> jobManager;
 
     <span class="pl-c">//region Constructor matching super</span>
-
     <span class="pl-c">/**</span>
 <span class="pl-c">     * Creates an IntentService.  Invoked by your subclass's constructor.</span>
 <span class="pl-c">     */</span>
@@ -662,7 +659,7 @@ Considering I'm using Otto to communicate between components, here comes the abs
 
 <p>ReactiveX provides <a href="https://github.com/ReactiveX/RxAndroid">Android specific bindings</a>.</p>
 
-<p>It can be pretty useful. We will see how I use it to do CRUD operations on the database.</p>
+<p>It can be pretty useful. We will see how I use it to perform CRUD operations on the database.</p>
 
 <h2>
 <a id="data-persistence" class="anchor" href="#data-persistence" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Data persistence</h2>
@@ -670,10 +667,10 @@ Considering I'm using Otto to communicate between components, here comes the abs
 <h3>
 <a id="the-orm-way" class="anchor" href="#the-orm-way" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>The ORM way</h3>
 
-<p>In software development, the Object-relational mapping (ORM) is a widely-used technique. Different libraries exist for the various language (Doctrine for PHP or Hibernate for Java for example).</p>
+<p>In software development, the Object-relational mapping (ORM) is a widely-used technique. Different libraries exist for the various languages (Doctrine for PHP or Hibernate for Java for example).</p>
 
 <p>The motivation to use an ORM is to easily set up and configure a SQLite database on Android.
-It's also very powerful when setting up relationships. At least, it provides very fluent API to execute CRUD operations on the database.</p>
+It's also very powerful when setting up relationships. At least, it provides a very fluent API to execute CRUD operations on the database.</p>
 
 <h4>
 <a id="ormlite" class="anchor" href="#ormlite" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>OrmLite</h4>
@@ -697,10 +694,10 @@ It's also very powerful when setting up relationships. At least, it provides ver
     <span class="pl-c">//endregion</span>
 }</pre></div>
 
-<p>Now I simply create my POJO class (i.e., <code>Repo</code> for this example):</p>
+<p>Now I simply create my POJO class (i.e., <code>RepoEntity</code> for this example):</p>
 
 <div class="highlight highlight-source-java"><pre>@DatabaseTable(tableName <span class="pl-k">=</span> <span class="pl-s"><span class="pl-pds">"</span>REPO<span class="pl-pds">"</span></span>, daoClass <span class="pl-k">=</span> <span class="pl-smi">DAORepo</span><span class="pl-k">.</span>class)
-<span class="pl-k">public</span> <span class="pl-k">class</span> <span class="pl-en">RepoEntity</span> <span class="pl-k">extends</span> <span class="pl-e">AbstractOrmLiteEntity</span> <span class="pl-k">implements</span> <span class="pl-e">Serializable</span> {
+<span class="pl-k">public</span> <span class="pl-k">class</span> <span class="pl-en">RepoEntity</span> <span class="pl-k">extends</span> <span class="pl-e">AbstractOrmLiteEntity</span> {
     <span class="pl-k">@DatabaseField</span>
     <span class="pl-k">public</span> <span class="pl-smi">Integer</span> id;
 
@@ -720,7 +717,7 @@ It's also very powerful when setting up relationships. At least, it provides ver
 
 <p>Unfortunately, there are executing synchronously. That's where RxJava comes wisely to perform those operations asynchronously.</p>
 
-<p>So I rewrote all the available methods in the RxJava-way.</p>
+<p>So I rewrote all the available methods in a RxJava-way.</p>
 
 <p>So I created an interface as follows:</p>
 
@@ -732,7 +729,12 @@ It's also very powerful when setting up relationships. At least, it provides ver
 
 <div class="highlight highlight-source-java"><pre><span class="pl-k">public</span> <span class="pl-k">abstract</span> <span class="pl-k">class</span> <span class="pl-en">RxBaseDaoImpl</span>&lt;DataType <span class="pl-k">extends</span> <span class="pl-e">AbstractOrmLiteEntity</span>, <span class="pl-e">IdType</span>&gt; extends <span class="pl-e">BaseDaoImpl&lt;<span class="pl-smi">DataType</span>, <span class="pl-smi">IdType</span>&gt;</span> <span class="pl-k">implements</span> <span class="pl-e">IRxDao&lt;<span class="pl-smi">DataType</span>, <span class="pl-smi">IdType</span>&gt;</span></pre></div>
 
-<p>As I always use <code>long</code> as ID type, I define the following abstract class:</p>
+<p>As I always use <code>long</code> as ID type, I define the following interface:</p>
+
+<div class="highlight highlight-source-java"><pre><span class="pl-k">public</span> <span class="pl-k">interface</span> <span class="pl-en">IOrmLiteEntityDAO</span>&lt;DataType <span class="pl-k">extends</span> <span class="pl-e">AbstractOrmLiteEntity</span>&gt; extends <span class="pl-e">Dao&lt;<span class="pl-smi">DataType</span>, <span class="pl-smi">Long</span>&gt;</span> {
+}</pre></div>
+
+<p>and abstract class:</p>
 
 <div class="highlight highlight-source-java"><pre><span class="pl-k">public</span> <span class="pl-k">abstract</span> <span class="pl-k">class</span> <span class="pl-en">AbstractBaseDAOImpl</span>&lt;DataType <span class="pl-k">extends</span> <span class="pl-e">AbstractOrmLiteEntity</span>&gt; extends <span class="pl-e">RxBaseDaoImpl&lt;<span class="pl-smi">DataType</span>, <span class="pl-smi">Long</span>&gt;</span> <span class="pl-k">implements</span> <span class="pl-e">IOrmLiteEntityDAO&lt;<span class="pl-smi">DataType</span>&gt;</span> {
     <span class="pl-c">//region Constructors matching super</span>
@@ -768,7 +770,7 @@ It's also very powerful when setting up relationships. At least, it provides ver
     <span class="pl-c">//endregion</span>
 }</pre></div>
 
-<p>Moreover, ORMLite provides us an abstract subclass of <code>SQLiteOpenHelper</code>, called <code>OrmLiteSqliteOpenHelper</code>. So, to declare the open helper we need, we simply have to write:</p>
+<p>Moreover, ORMLite provides an abstract subclass of <code>SQLiteOpenHelper</code>, called <code>OrmLiteSqliteOpenHelper</code>. So, to declare our open helper, we simply have to write:</p>
 
 <div class="highlight highlight-source-java"><pre><span class="pl-k">public</span> <span class="pl-k">class</span> <span class="pl-en">DatabaseHelperAndroidStarter</span> <span class="pl-k">extends</span> <span class="pl-e">OrmLiteSqliteOpenHelper</span> {
     <span class="pl-k">private</span> <span class="pl-k">static</span> <span class="pl-k">final</span> <span class="pl-smi">String</span> <span class="pl-c1">DATABASE_NAME</span> <span class="pl-k">=</span> <span class="pl-s"><span class="pl-pds">"</span>android_starter.db<span class="pl-pds">"</span></span>;
@@ -796,9 +798,9 @@ It's also very powerful when setting up relationships. At least, it provides ver
     <span class="pl-c">//endregion</span>
 }</pre></div>
 
-<p>We can see that ORMLite provides the utils class <a href="http://ormlite.com/javadoc/ormlite-core/com/j256/ormlite/table/TableUtils.html"><code>TableUtils</code></a> where helpful methods come to create or drop a table according to its mapped Java class.</p>
+<p>We can see that ORMLite provides the utility class <a href="http://ormlite.com/javadoc/ormlite-core/com/j256/ormlite/table/TableUtils.html"><code>TableUtils</code></a>, where helpful methods come to create or drop a table according to its mapped Java class.</p>
 
-<p>At this time, don't pay attention to the <code>@SneakyThrows</code>. It comes from Lombok. I'll give more details about it in a future section. Just remind that it allows us no to write the <code>try/catch</code> statement by ourself, the annotation processor writes it for us, and we don't have compilation errors.</p>
+<p>At this time, don't pay attention to the <code>@SneakyThrows</code>. It comes from Lombok to be used to throw checked exceptions. Just remind that it allows us not to write the <code>try/catch</code> statement by ourself, the annotation processor writes it for us.</p>
 
 <p>Now, it becomes very easy to deal with data. We just need a <code>DatabaseHelperAndroidStarter</code>:</p>
 
@@ -815,7 +817,7 @@ It's also very powerful when setting up relationships. At least, it provides ver
 <p>In a <code>Fragment</code>, we can get all the repo through the following call:</p>
 
 <div class="highlight highlight-source-java"><pre><span class="pl-k">private</span> <span class="pl-k">void</span> rxGetRepos() {
-    mSubscriptionGetRepos <span class="pl-k">=</span> <span class="pl-smi">AndroidObservable</span><span class="pl-k">.</span>bindFragment(getView(), getDatabaseRepos())
+    mSubscriptionGetRepos <span class="pl-k">=</span> daoRepo<span class="pl-k">.</span>rxQueryForAll()
             .subscribeOn(<span class="pl-smi">Schedulers</span><span class="pl-k">.</span>newThread())
             .observeOn(<span class="pl-smi">AndroidSchedulers</span><span class="pl-k">.</span>mainThread())
             .subscribe(
@@ -832,15 +834,9 @@ It's also very powerful when setting up relationships. At least, it provides ver
             );
 }</pre></div>
 
-<p>And the <code>getDatabaseRepos</code> is simply defined as:</p>
-
-<div class="highlight highlight-source-java"><pre><span class="pl-k">private</span> <span class="pl-k">Observable&lt;<span class="pl-k">List&lt;<span class="pl-smi">RepoEntity</span>&gt;</span>&gt;</span> getDatabaseRepos() {
-    <span class="pl-k">return</span> daoRepo<span class="pl-k">.</span>rxQueryForAll();
-}</pre></div>
-
 <p>But a question remains: how to get repo from network, parse it and store it in our database?</p>
 
-<p>A simple response could be gather all annotations in the same Java class. But we obtain a class with all the responsibilities of both network and database configuration.</p>
+<p>A simple response could be to gather all annotations in the same Java class. But we obtain a class with all the responsibilities of both network and database configuration.</p>
 
 <p>My goal is to keep a class to interact with the network, <code>DTORepo</code> ; and one to map the database, <code>RepoEntity</code>. Basically, they have common fields, with the same names. So I need a tool to convert DTO to Entity. That's where <a href="https://github.com/txusballesteros/android-transformer">Android Transformer</a> comes to the rescue:</p>
 
@@ -852,7 +848,7 @@ It's also very powerful when setting up relationships. At least, it provides ver
 <li>
 <code>@Mappable</code> to indicate the class it is mapped to</li>
 <li>
-<code>@Mapped</code> to indicate a member should be bound</li>
+<code>@Mapped</code> to indicate a member should be mapped</li>
 </ul>
 
 <p>So, our <code>RepoEntity</code> class becomes:</p>
@@ -887,7 +883,7 @@ It's also very powerful when setting up relationships. At least, it provides ver
 <p>As a conclusion: </p>
 
 <ul>
-<li>we have a simple way to define a new class mapping a SQLite class</li>
+<li>we have a simple way to define a new class mapping a SQLite table</li>
 <li>we conforms to the single responsibility principle by providing a dedicated implementation of <code>AbstractBaseDAOImpl</code>
 </li>
 <li>we access to CRUD operations, in an asynchronous way, thanks to RxJava </li>
@@ -900,14 +896,14 @@ It's also very powerful when setting up relationships. At least, it provides ver
 <h3>
 <a id="the-contentprovider-way" class="anchor" href="#the-contentprovider-way" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>The <code>ContentProvider</code> way</h3>
 
-<p>A widely use approach is to set up a <a href="http://developer.android.com/reference/android/content/ContentProvider.html"><code>ContentProvider</code></a>. Personally, I came to it thanks to the <a href="https://github.com/google/iosched"><em>iosched</em> application open sourced by Google</a>. That's where I saw how to configure and use this concept.</p>
+<p>A widely used approach is to set up a <a href="http://developer.android.com/reference/android/content/ContentProvider.html"><code>ContentProvider</code></a>. Personally, I came to it thanks to the <a href="https://github.com/google/iosched"><em>iosched</em> application open sourced by Google</a>. That's where I saw how to configure and use this concept.</p>
 
 <p>I'd like to say that I find that it's a powerful mechanism, especially when it's used in combination with <a href="http://developer.android.com/reference/android/database/Cursor.html"><code>Cursor</code></a> and its derivatives like <a href="http://developer.android.com/reference/android/content/CursorLoader.html"><code>CursorLoader</code></a> and <a href="http://developer.android.com/reference/android/widget/CursorAdapter.html"><code>CursorAdapter</code></a>.</p>
 
 <p>It's performant and reliable. Moreover, it can be boosted up with some tips like overriding the <code>bulkInsert</code> method and use a single SQL transaction.</p>
 
 <p>The only thing I regret is that it's not petty to set up and we write a lot of boilerplate code.
-That's why I looked for a simpler solution to declare my content provider easily, but to maintain control over the implementation of some methods of the ContentProvider. In other word, I must deal with a <code>ContentProvider</code> subclass.</p>
+That's why I looked for a simpler solution to declare my content provider easily, but to maintain control over the implementation of some methods of the content provider. In other word, I must deal with a <code>ContentProvider</code> subclass.</p>
 
 <p>That's why I like <a href="https://github.com/TimotheeJeannin/ProviGen">ProviGen</a>.</p>
 
@@ -924,17 +920,17 @@ That's why I looked for a simpler solution to declare my content provider easily
 <li>a <code>TableBuilder</code> class is available to help developers building their SQL tables with a fluent API</li>
 </ul>
 
-<p>Each "model" class have its own contract class.
+<p>Each "model" class has its own contract class.
 In few lines, the <code>ProviGenProvider</code> subclass provides a way to register all these contract class.</p>
 
-<p>It becomes very fast to set up a basic content provider. The fact to maintain control over this implementation, so that we can </p>
+<p>It becomes very fast to set up a basic content provider. To maintain control over this implementation, we can </p>
 
 <ul>
 <li>add custom URIs and deal with it (for more complex jobs for example)</li>
-<li>speed up this content provider performances</li>
+<li>speed up the content provider performances</li>
 </ul>
 
-<p>Another tool I like to speed up content provider management is <a href="https://github.com/chalup/microorm">MicroOrm</a>. Just annotate your POJO with <code>@Column</code>, giving it the name of the column to bind (the constant coming from the contract class is perfect for that!), and then you:</p>
+<p>Another tool I like to speed up content provider management is <a href="https://github.com/chalup/microorm">MicroOrm</a>. Just annotate your POJO with <code>@Column</code>, giving it the name of the column to bind (the constant coming from the contract class is perfect for that!), and then you can:</p>
 
 <ul>
 <li>build <a href="http://developer.android.com/reference/android/content/ContentValues.html"><code>ContentValues</code></a> easily through a <code>MicroOrm</code> instance and its <code>toContentValues</code> method, taking a POJO instance as parameter</li>
@@ -949,7 +945,7 @@ In few lines, the <code>ProviGenProvider</code> subclass provides a way to regis
 
 <p>The dependency injection (a.k.a. "DI") is a powerful design pattern that implements inversion of control to resolve dependencies.</p>
 
-<p>No need to reming how useful can be the DI:</p>
+<p>No need to remind how useful can be the DI:</p>
 
 <ul>
 <li>easy to read</li>
@@ -957,17 +953,17 @@ In few lines, the <code>ProviGenProvider</code> subclass provides a way to regis
 <li>easy to test (because it's easy to mock an element)</li>
 </ul>
 
-<p>A major solution to use DI on Android is <a href="http://google.github.io/dagger/">Dagger2</a>. Its main advantage I see is that the dependency analysis is done at the compile time. Potential errors are notified as soon as possible.</p>
+<p>A major solution to use DI on Android is <a href="http://google.github.io/dagger/">Dagger2</a>. Its main advantage I see is that the dependency analysis is done compile time. So potential errors are notified as soon as possible.</p>
 
 <p>This is not the place to detail all the capabilities of Dagger2. 
 <a href="http://code.tutsplus.com/tutorials/dependency-injection-with-dagger-2-on-android--cms-23345">This article, written by Kerry Perez Huanca</a>, provides a good summary of the Dagger2 workflow with its key concepts:</p>
 
 <ol>
-<li>Identify the dependent objects and its dependencies.</li>
+<li>Identify the dependent objects and their dependencies.</li>
 <li>Create a class with the <code>@Module</code> annotation, using the <code>@Provides</code> annotation for every method that returns a dependency.</li>
 <li>Request dependencies in your dependent objects using the <code>@Inject</code> annotation.</li>
 <li>Create an interface using the <code>@Component</code> annotation and add the classes with the <code>@Module</code> annotation created in the second step.</li>
-<li>Create an object of the <code>@Component</code> interface to instantiate the dependent object with its dependencies.</li>
+<li>Create an object of the <code>@Component</code> interface to instantiate the dependent objects with their dependencies.</li>
 </ol>
 
 <p>To have a full taste of Dagger2, I suggest you to read this <a href="http://fernandocejas.com/2015/04/11/tasting-dagger-2-on-android/">excellent article written by Fernando Cejas</a>.</p>
@@ -975,7 +971,7 @@ In few lines, the <code>ProviGenProvider</code> subclass provides a way to regis
 <p>Now, according to our sample project, following the workflow described up above, let's set up Dagger2 in the project.</p>
 
 <h4>
-<a id="1-identify-the-dependent-objects-and-its-dependencies" class="anchor" href="#1-identify-the-dependent-objects-and-its-dependencies" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>1. Identify the dependent objects and its dependencies:</h4>
+<a id="1-identify-the-dependent-objects-and-their-dependencies" class="anchor" href="#1-identify-the-dependent-objects-and-their-dependencies" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>1. Identify the dependent objects and their dependencies:</h4>
 
 <ul>
 <li>the <code>ServiceQueryExecutor</code> requires an instance of <code>JobManager</code>
@@ -1008,10 +1004,10 @@ In few lines, the <code>ProviGenProvider</code> subclass provides a way to regis
     <span class="pl-k">@Singleton</span>
     <span class="pl-k">public</span> <span class="pl-smi">JobManager</span> <span class="pl-en">provideJobManager</span>(<span class="pl-k">@NonNull</span> <span class="pl-k">final</span> <span class="pl-smi">Context</span> <span class="pl-v">poContext</span>) {
         <span class="pl-k">final</span> <span class="pl-smi">Configuration</span> loConfiguration <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-smi">Configuration</span>.<span class="pl-smi">Builder</span>(poContext)
-                .minConsumerCount(<span class="pl-c1">1</span>) <span class="pl-c">//always keep at least one consumer alive</span>
-                .maxConsumerCount(<span class="pl-c1">3</span>) <span class="pl-c">//up to 3 consumers at a time</span>
-                .loadFactor(<span class="pl-c1">3</span>) <span class="pl-c">//3 jobs per consumer</span>
-                .consumerKeepAlive(<span class="pl-c1">120</span>) <span class="pl-c">//wait 2 minute</span>
+                .minConsumerCount(<span class="pl-c1">1</span>) <span class="pl-c">// always keep at least one consumer alive</span>
+                .maxConsumerCount(<span class="pl-c1">3</span>) <span class="pl-c">// up to 3 consumers at a time</span>
+                .loadFactor(<span class="pl-c1">3</span>) <span class="pl-c">// 3 jobs per consumer</span>
+                .consumerKeepAlive(<span class="pl-c1">120</span>) <span class="pl-c">// wait 2 minute</span>
                 .build();
         <span class="pl-k">return</span> <span class="pl-k">new</span> <span class="pl-smi">JobManager</span>(poContext, loConfiguration);
     }
@@ -1191,13 +1187,13 @@ In few lines, the <code>ProviGenProvider</code> subclass provides a way to regis
 
 <p>Concerning the last one, <code>ModuleTransformer</code>, as it's impossible to strongly type an instance of <code>Transformer</code>, we use the naming convention thanks to the <code>@Named</code> annotation.</p>
 
-<p>It now can be used like:</p>
+<p>It now can be injected like:</p>
 
 <div class="highlight highlight-source-java"><pre>@<span class="pl-smi">Inject</span>
 @Named(<span class="pl-smi">ModuleTransformer</span><span class="pl-c1"><span class="pl-k">.</span>TRANSFORMER_REPO</span>)
 <span class="pl-smi">Transformer</span> transformerRepo;</pre></div>
 
-<p>To speed up the set up of components, I'm going to use the annotations-based <a href="https://github.com/lukaspili/Auto-Dagger2">Auto-Dagger2</a> library. Annotations are used compile-time to generate boilerplate code of the components.</p>
+<p>To speed up the set up of components, I use the annotations-based <a href="https://github.com/lukaspili/Auto-Dagger2">Auto-Dagger2</a> library. Annotations are processed compile-time to generate boilerplate code of the components.</p>
 
 <p>On the one hand, I've to declare my <code>Application</code> subclass like this:</p>
 
@@ -1215,9 +1211,9 @@ In few lines, the <code>ProviGenProvider</code> subclass provides a way to regis
 @<span class="pl-smi">Singleton</span>
 <span class="pl-k">public</span> <span class="pl-k">class</span> <span class="pl-en">ApplicationAndroidStarter</span> <span class="pl-k">extends</span> <span class="pl-e">MultiDexApplication</span></pre></div>
 
-<p>The <code>@AutoComponent</code> lists all the modules to provide in the generated component.</p>
+<p>The <code>@AutoComponent</code> lists all the modules to provide it in the generated component.</p>
 
-<p>On the other hand, on each element that needs injected elements, I have to add the <code>@AutoInjector(ApplicationAndroidStarter.class)</code> annotation, pointing on the class annotated with <code>@AutoComponent</code>. That way, I obtain a valid component declaration, auto-generated, as follows:</p>
+<p>On the other hand, on each element that needs injected elements, I add the <code>@AutoInjector(ApplicationAndroidStarter.class)</code> annotation, pointing on the class annotated with <code>@AutoComponent</code>. This way, I obtain a valid component declaration, auto-generated, as follows:</p>
 
 <div class="highlight highlight-source-java"><pre>@Component(
     modules <span class="pl-k">=</span> {
@@ -1244,7 +1240,7 @@ In few lines, the <code>ProviGenProvider</code> subclass provides a way to regis
 
 }</pre></div>
 
-<p>It allows me not to write code of the component, and not to add manually an <code>inject</code> method each time a new element needs injection.</p>
+<p>It allows me not to write code of the component, and not to add manually an <code>inject</code> method each time a new element needs injections.</p>
 
 <p>For example, my <code>ServiceQueryExecutor</code> is simply declared as follows:</p>
 
@@ -1260,7 +1256,7 @@ In few lines, the <code>ProviGenProvider</code> subclass provides a way to regis
 
 <p>All you need to know about <a href="http://hannesdorfmann.com/mosby/mvp/">MVP fundamentals</a>, <a href="http://hannesdorfmann.com/mosby/viewstate/">ViewState</a> and LCE (Loading-Content-Error) is well explained in this website.</p>
 
-<p>Another useful tool is the <a href="http://developer.android.com/tools/data-binding/guide.html">Android DataBinding library</a>. Using this one makes our <em>View</em> and our <em>Model</em> tightly coupled. And the have a bidirectional binding. It's the glue we were missing. With a few configuration, we can plug the view (its <code>layout.xml</code> file and <code>Activity</code>/<code>Fragment</code>) to the model (traditionally, a POJO). I let the official documentation tells you how to use this library.</p>
+<p>Another useful tool is the <a href="http://developer.android.com/tools/data-binding/guide.html">Android DataBinding library</a>. Using this one makes our <em>View</em> and our <em>Model</em> tightly coupled. And to have a bidirectional binding. It's the glue we were missing. With a few configuration, we can plug the view (its <code>layout.xml</code> file and <code>Activity</code>/<code>Fragment</code>) to the model (traditionally, a POJO). I let the official documentation tells you how to use this library.</p>
 
 <p>To explain the MVP architecture using Mosby, I'm going to present the use case of <em>displaying the detail of a repo</em>.</p>
 
@@ -1321,7 +1317,7 @@ In few lines, the <code>ProviGenProvider</code> subclass provides a way to regis
 
     <span class="pl-c">//region Reactive job</span>
     <span class="pl-k">private</span> <span class="pl-k">void</span> <span class="pl-en">rxGetRepo</span>(<span class="pl-k">final</span> <span class="pl-k">long</span> <span class="pl-v">plRepoId</span>) {
-        mSubscriptionGetRepo <span class="pl-k">=</span> <span class="pl-smi">AndroidObservable</span><span class="pl-k">.</span>bindFragment(getView(), getDatabaseRepo(plRepoId))
+        mSubscriptionGetRepo <span class="pl-k">=</span> getDatabaseRepo(plRepoId)
                 .subscribeOn(<span class="pl-smi">Schedulers</span><span class="pl-k">.</span>newThread())
                 .observeOn(<span class="pl-smi">AndroidSchedulers</span><span class="pl-k">.</span>mainThread())
                 .subscribe(
@@ -1358,9 +1354,9 @@ In few lines, the <code>ProviGenProvider</code> subclass provides a way to regis
 
 <p>The main code is placed in the <code>rxGetRepo</code> method: it loads data from database and asks the view to configure itself according to the result (success: it should display data ; failure: it should display an error).</p>
 
-<p>And now, let's have a look to the <code>FragmentRepoDetail</code>. Considering Mosby explanation, this fragment is part of the <em>View</em>. So, it should implements the <code>ViewRepoDetail</code> we've defined. To be closest to Mosby API, we make it inherit from <code>MvpFragment</code>, providing generic types <code>ViewRepoDetail</code> (for the <em>View</em>) and <code>PresenterRepoDetail</code> (for the <em>Presenter</em>).</p>
+<p>And now, let's have a look to the <code>FragmentRepoDetail</code>. Considering Mosby explanation, this fragment is part of the <em>View</em>. So, it should implements the <code>ViewRepoDetail</code> we defined. To be closest to Mosby API, we make it inherit from <code>MvpFragment</code>, providing generic types <code>ViewRepoDetail</code> (for the <em>View</em>) and <code>PresenterRepoDetail</code> (for the <em>Presenter</em>).</p>
 
-<p>So what we got:</p>
+<p>So what we get:</p>
 
 <div class="highlight highlight-source-java"><pre>@<span class="pl-smi">FragmentWithArgs</span>
 <span class="pl-k">public</span> <span class="pl-k">class</span> <span class="pl-en">FragmentRepoDetail</span>
@@ -1392,11 +1388,6 @@ In few lines, the <code>ProviGenProvider</code> subclass provides a way to regis
     <span class="pl-c">//endregion</span>
 
     <span class="pl-c">//region Default constructor</span>
-
-    <span class="pl-c">/**</span>
-<span class="pl-c">     * Mandatory empty constructor for the fragment manager to instantiate the</span>
-<span class="pl-c">     * fragment (e.g. upon screen orientation changes).</span>
-<span class="pl-c">     */</span>
     <span class="pl-k">public</span> <span class="pl-en">FragmentRepoDetail</span>() {
     }
     <span class="pl-c">//endregion</span>
@@ -1577,7 +1568,7 @@ In few lines, the <code>ProviGenProvider</code> subclass provides a way to regis
 <p>Thanks to the MVP architecture we set, we gain a lot when structuring our code:</p>
 
 <ul>
-<li>a dedicated class to load and present the suitable widgets: the <em>Presenter</em>
+<li>a dedicated class to load and present the suitable data: the <em>Presenter</em>
 </li>
 <li>a class to represent the data we should display: the <em>Model</em>
 </li>
@@ -1590,12 +1581,12 @@ In few lines, the <code>ProviGenProvider</code> subclass provides a way to regis
 <h2>
 <a id="write-thinner-classes" class="anchor" href="#write-thinner-classes" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Write thinner classes</h2>
 
-<p>Having in mind the huge number of <em>listener</em>, boilerplate code to display specific views and content, handling user interaction (button click, text changes, menu item click)... and so on, it's usual to write <code>Activity</code>/<code>Fragment</code> with a huge number of lines, methods and interfaces. It could become very difficult to read (so to understand and maintain) theses files.</p>
+<p>Having in mind the huge number of <em>listeners</em>, boilerplate code to display specific views and content, handling user interactions (button click, text changes, menu item click)... and so on, it's usual to write <code>Activity</code>/<code>Fragment</code> with a huge number of lines, methods and interfaces. It could become very difficult to read theses files.</p>
 
 <p>This section aims at writing this code in a different way:</p>
 
 <ul>
-<li>is it possible to reorganize in meaningful layers?</li>
+<li>is it possible to reorganize it in meaningful layers?</li>
 <li>is it possible to get rid of boilerplate code and automate its generation?</li>
 </ul>
 
@@ -1624,7 +1615,7 @@ In few lines, the <code>ProviGenProvider</code> subclass provides a way to regis
 <ul>
 <li>bind a view by its ID to a Java <code>View</code> object, idem for a list of views</li>
 <li>bind string resource by its ID to a Java <code>String</code> object, idem for drawables, colors, dimensions and so on</li>
-<li>listen to the click of a view (or a list of views) by its ID and call a specific method</li>
+<li>listen to the click on a view (or a list of views) by its ID and call a specific method</li>
 <li>listen to item selection in a <code>ListView</code>
 </li>
 <li>listen to some events on views like <code>OnCheckedChanged</code>, <code>OnEditorAction</code>, <code>OnFocusChange</code> ,<code>OnTextChanged</code>, etc.</li>
@@ -1662,7 +1653,7 @@ In few lines, the <code>ProviGenProvider</code> subclass provides a way to regis
 
 <p>It provides simple annotations to set up to your fragment, and the annotation processor generates you the builder class that corresponds. By using the word "builder", the hint is that you can specify that some parameters are optional.</p>
 
-<p>That way, you gain a formal contract to create your fragment, you are of which parameters to provide and you reduce risks to badly configure this one.</p>
+<p>That way, you gain a formal contract to create your fragment, you are sure of which parameters to provide and you reduce risks to badly configure this one.</p>
 
 <h4>
 <a id="intentbuilder" class="anchor" href="#intentbuilder" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>IntentBuilder</h4>
@@ -1673,7 +1664,7 @@ In few lines, the <code>ProviGenProvider</code> subclass provides a way to regis
 
 <p>After using FragmentArgs, I asked myself how to start activities and services in the same way. My motivations are pretty the same that for FragmentArgs. The collateral benefit is that I gain a similar way to build all these concepts from the Android SDK.</p>
 
-<p>Having this in mind, IntentBuilder represent the perfect solution I was looking for.</p>
+<p>Having this in mind, IntentBuilder represents the perfect solution I was looking for.</p>
 
 <h4>
 <a id="icepick" class="anchor" href="#icepick" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Icepick</h4>
@@ -1685,7 +1676,7 @@ In few lines, the <code>ProviGenProvider</code> subclass provides a way to regis
 <p>Another "must-have library", quoted frequently in listings!</p>
 
 <p>It aims at simplify the way to save and restore the state of activities and fragments.
-It provides very clear annotations and a powerful util class named <code>Icepick</code>.</p>
+It provides very clear annotations and a powerful utility class named <code>Icepick</code>.</p>
 
 <h4>
 <a id="onactivityresult" class="anchor" href="#onactivityresult" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>OnActivityResult</h4>
@@ -1712,7 +1703,7 @@ It provides very clear annotations and a powerful util class named <code>Icepick
 </ul>
 
 <p>It's a famous Java project to reduce boilerplate Java code.
-Developer writes less code, to it's less error-prone and easy to read (so to maintain).</p>
+Developer writes less code, so it's less error-prone and easy to read.</p>
 
 <p>In an Android project, using Android Studio, it should be used in combination with the associated plugin:</p>
 
@@ -1760,7 +1751,7 @@ Developer writes less code, to it's less error-prone and easy to read (so to mai
 <li><a href="https://github.com/blacroix/viewholder_customview_generic/tree/master/app/src/main/java/fr/blacroix/generic">https://github.com/blacroix/viewholder_customview_generic/tree/master/app/src/main/java/fr/blacroix/generic</a></li>
 </ul>
 
-<p>It's pretty easy to turn it so that it can manage a <code>Cursor</code>.</p>
+<p>It's possible to turn it so that it can manage a <code>Cursor</code>.</p>
 
 <p>Here comes a powerful library to inflate and bind <code>View</code>: <a href="https://github.com/RomainPiel/Michelangelo">Michelangelo</a>.</p>
 
@@ -1778,7 +1769,7 @@ Developer writes less code, to it's less error-prone and easy to read (so to mai
 
 <p>To do so similar technique in Java, we often have to declare an interface "B" and provide an anonymous implementation to the function "A". Quite verbose (and boring)!</p>
 
-<p>Lambda expressions provide an attractive since it simplifies the use of interfaces with a single abstract method (i.e., "SAM interfaces" or "Functional Interfaces"), such as <code>Runnable</code>, <code>Comparator</code> and multiple <em>listeners</em> in the Android SDK.</p>
+<p>Lambda expressions provide an attractive alternative since it simplifies the use of interfaces with a single abstract method (i.e., "SAM interfaces" or "Functional Interfaces"), such as <code>Runnable</code>, <code>Comparator</code> and multiple <em>listeners</em> in the Android SDK.</p>
 
 <p>It has a very fluent syntax:</p>
 
@@ -1830,7 +1821,7 @@ retrolambda {
 <h3>
 <a id="simplify-the-logic-to-switch-between-lce-views" class="anchor" href="#simplify-the-logic-to-switch-between-lce-views" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Simplify the logic to switch between <em>LCE</em> views</h3>
 
-<p>LCE is an acronym (I knew thanks to the Mosby articles) to describe the traditional Loading-Content-Error views an <code>Activity</code> or <code>Fragment</code> could manage. I just would like to add the <em>Empty</em> view notion.</p>
+<p>LCE is an acronym (I knew thanks to the Mosby articles) to describe the traditional Loading-Content-Error views an <code>Activity</code> or <code>Fragment</code> could manage. I just would like to add the <em>Empty</em> view keyword.</p>
 
 <p>It's a common task to switch from one <code>View</code> to another according to user interaction and/or jobs execution. It could easily become a complex lot of methods with boolean parameters to represent the view state. Not easy to set up and not easy to read when coming back to the project few months later.</p>
 
@@ -1849,7 +1840,6 @@ You set up the various views it has to play with:</p>
                 .addContentView(findViewById(<span class="pl-smi">R</span><span class="pl-k">.</span>id<span class="pl-k">.</span>recycler_view)) <span class="pl-c">// content member</span>
                 .addErrorView(findViewById(<span class="pl-smi">R</span><span class="pl-k">.</span>id<span class="pl-k">.</span>error_view)) <span class="pl-c">// error view member</span>
                 .addProgressView(findViewById(<span class="pl-smi">R</span><span class="pl-k">.</span>id<span class="pl-k">.</span>progress_view)) <span class="pl-c">// progress view member</span>
-                .setErrorLabel((<span class="pl-smi">TextView</span>) findViewById(<span class="pl-smi">R</span><span class="pl-k">.</span>id<span class="pl-k">.</span>error_label)) <span class="pl-c">// error label</span>
                 .addEmptyView(findViewById(<span class="pl-smi">R</span><span class="pl-k">.</span>id<span class="pl-k">.</span>empty_view)) <span class="pl-c">// empty placeholder member</span>
                 .build();</pre></div>
 
@@ -1921,7 +1911,7 @@ dependencies {
 
 <p>That's why I wonder "how to write better unit tests for my Android projects?".</p>
 
-<p>I first answer I found were to use Java labels such as:</p>
+<p>A first answer I found was to use Java labels such as:</p>
 
 <div class="highlight highlight-source-java"><pre><span class="pl-k">public</span> <span class="pl-k">void</span> test_A_Test_Method() throws <span class="pl-smi">IOException</span> {
     <span class="pl-smi">Given</span><span class="pl-k">:</span>
@@ -1994,7 +1984,7 @@ assertThat(foo)<span class="pl-k">.</span>isEmpty();</pre></div>
 
 <p>The first advantage is that it makes tests easier to read. Another one is that the failure messages are more meaningful.</p>
 
-<p>Square also released a library to write assertions specific to Android views:</p>
+<p>Square also released a library to write specific assertions to Android views:</p>
 
 <ul>
 <li>AssertJ Android:  <a href="http://square.github.io/assertj-android/">http://square.github.io/assertj-android/</a>
@@ -2004,11 +1994,11 @@ assertThat(foo)<span class="pl-k">.</span>isEmpty();</pre></div>
 <h3>
 <a id="mocking" class="anchor" href="#mocking" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Mocking</h3>
 
-<p>To mock the behavior of some component of my projects, I use the <a href="http://site.mockito.org">Mockito library</a>.</p>
+<p>To mock the behavior of some components of my projects, I use the <a href="http://site.mockito.org">Mockito library</a>.</p>
 
 <p><img src="https://raw.githubusercontent.com/RoRoche/AndroidStarter/master/assets/logo_mockito.png" alt="Mockito logo"></p>
 
-<p>Considering I'm in Multidex project, I had to configure my <code>build.gradle</code> as follows:</p>
+<p>Considering I'm in Multidex project, I have to configure my <code>build.gradle</code> as follows:</p>
 
 <div class="highlight highlight-source-groovy"><pre>    androidTestCompile <span class="pl-s"><span class="pl-pds">'</span>org.mockito:mockito-core:1.10.19<span class="pl-pds">'</span></span>
     androidTestCompile <span class="pl-s"><span class="pl-pds">'</span>com.google.dexmaker:dexmaker-mockito:1.2<span class="pl-pds">'</span></span></pre></div>
@@ -2022,9 +2012,9 @@ assertThat(foo)<span class="pl-k">.</span>isEmpty();</pre></div>
         <span class="pl-k">return</span> mPicasso;
     }</pre></div>
 
-<p>So when starting we UI tests, this code allows me to mock the behavior of Picasso. Afterwards I can assert the calls that were made to this component, thanks to Mockito's API:</p>
+<p>So when starting UI testing, this code allows me to mock the behavior of Picasso. Afterwards I can check the calls that were made to this component, thanks to Mockito's API:</p>
 
-<div class="highlight highlight-source-java"><pre>verify(mModuleRest<span class="pl-k">.</span>getPicasso(), times(<span class="pl-c1">2</span>))<span class="pl-k">.</span>load(<span class="pl-s"><span class="pl-pds">"</span>a test url<span class="pl-pds">"</span></span>);</pre></div>
+<div class="highlight highlight-source-java"><pre>verify(mModuleRest<span class="pl-k">.</span>getPicasso(), times(<span class="pl-c1">1</span>))<span class="pl-k">.</span>load(<span class="pl-s"><span class="pl-pds">"</span>a test url<span class="pl-pds">"</span></span>);</pre></div>
 
 <p>Other well-known mocking libraries are commonly used across the Android ecosystem. Just to quote them:</p>
 
@@ -2045,11 +2035,11 @@ assertThat(foo)<span class="pl-k">.</span>isEmpty();</pre></div>
 <h3>
 <a id="ui-testing" class="anchor" href="#ui-testing" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>UI testing</h3>
 
-<p>Another well-known testing library is <a href="https://github.com/robotiumtech/robotium">Robotium</a>. It's a powerful to describe and run UI tests.</p>
+<p>Another well-known testing library is <a href="https://github.com/robotiumtech/robotium">Robotium</a>. It's very powerful to describe and run UI tests.</p>
 
 <p><img src="https://raw.githubusercontent.com/RoRoche/AndroidStarter/master/assets/logo_robotium.png" alt="Robotium logo"></p>
 
-<p>To set it up, we have to use it in combination with the <a href="http://developer.android.com/reference/android/support/test/rule/ActivityTestRule.html"><code>ActivityTestRule</code></a>. This one allows us to write tests concerning an Android <code>Activity</code>. Then we get this <code>Activity</code>to configure our <code>Solo</code> instance. This <code>Solo</code> class is the entry point of the Robotium tool. This class provides a wide set of methods to reproduce the user behavior.</p>
+<p>To set it up, we have to use it in combination with the <a href="http://developer.android.com/reference/android/support/test/rule/ActivityTestRule.html"><code>ActivityTestRule</code></a>. This one allows us to write tests concerning an Android <code>Activity</code>. Then we get this <code>Activity</code> to configure our <code>Solo</code> instance. This <code>Solo</code> class is the entry point of the Robotium tool. This class provides a wide set of methods to reproduce the user behavior.</p>
 
 <p>To make it easier to write Robotium test cases, I wrote an abstract and generic test class:</p>
 
@@ -2142,7 +2132,7 @@ assertThat(foo)<span class="pl-k">.</span>isEmpty();</pre></div>
     }
 }</pre></div>
 
-<p>I pass <code>false</code> as third parameter to the <code>ActivityTestRule</code> constructor so it don't start the activity by default. Then, I launch the activity at the end of my "given" block, after all initializations I need.
+<p>I pass <code>false</code> as third parameter to the <code>ActivityTestRule</code> constructor so it doesn't start the activity by default. Then, I launch the activity at the end of my "given" block, after all initializations I need.
 By calling <code>mActivityTestRule.launchActivity(null)</code>, I notify the test rule to build the default <code>Intent</code> (thanks to the <code>null</code> parameter) and start it. It returns me an instance of the started activity.</p>
 
 <h3>
@@ -2220,7 +2210,7 @@ By calling <code>mActivityTestRule.launchActivity(null)</code>, I notify the tes
     <span class="pl-c">//endregion</span>
 }</pre></div>
 
-<p>It's the entry point where every element asks for its dependencies. Now, the idea is to subclass it in my test project, as follows:</p>
+<p>It's the entry point where each element asks for its dependencies. Now, the idea is to subclass it in my test project, as follows:</p>
 
 <div class="highlight highlight-source-java"><pre><span class="pl-k">public</span> <span class="pl-k">class</span> <span class="pl-en">MockApplication</span> <span class="pl-k">extends</span> <span class="pl-e">ApplicationAndroidStarter</span> {
 
@@ -2390,11 +2380,11 @@ By calling <code>mActivityTestRule.launchActivity(null)</code>, I notify the tes
         {
             <span class="pl-k">final</span> <span class="pl-smi">String</span> lsSpecificJSONData <span class="pl-k">=</span> <span class="pl-c">/* specific JSON data*/</span>;
             <span class="pl-k">final</span> <span class="pl-smi">MockResponse</span> loMockResponse <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-smi">MockResponse</span>()<span class="pl-k">.</span>setResponseCode(<span class="pl-c">/* HTTP status code */</span>);
-            loMockResponseWithOneRepo<span class="pl-k">.</span>setBody(lsSpecificJSONData);
+            loMockResponse<span class="pl-k">.</span>setBody(lsSpecificJSONData);
             mModuleRest<span class="pl-k">.</span>getMockWebServer()<span class="pl-k">.</span>enqueue(loMockResponse);
             <span class="pl-k">try</span> {
-                mMockWebServer<span class="pl-k">.</span>start(<span class="pl-c">/* the mock web server pot */</span>);
-            } <span class="pl-k">catch</span> (@<span class="pl-smi">NonNull</span> <span class="pl-k">final</span> <span class="pl-smi">Exception</span> loException) {
+                mMockWebServer<span class="pl-k">.</span>start(<span class="pl-c">/* the mock web server port */</span>);
+            } <span class="pl-k">catch</span> (<span class="pl-k">final</span> <span class="pl-smi">Exception</span> loException) {
                 loException<span class="pl-k">.</span>printStackTrace();
             }
             <span class="pl-c">// 'then' statements</span>
