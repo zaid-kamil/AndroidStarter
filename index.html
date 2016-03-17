@@ -2367,7 +2367,7 @@ By calling <code>mActivityTestRule.launchActivity(null)</code>, I notify the tes
         <span class="pl-v">super</span><span class="pl-k">.</span>tearDown();
         <span class="pl-k">try</span> {
             mMockWebServer<span class="pl-k">.</span>shutdown();
-        } <span class="pl-k">catch</span> (@<span class="pl-smi">NonNull</span> <span class="pl-k">final</span> <span class="pl-smi">Exception</span> loException) {
+        } <span class="pl-k">catch</span> (<span class="pl-k">final</span> <span class="pl-smi">Exception</span> loException) {
             loException<span class="pl-k">.</span>printStackTrace();
         }
     }
